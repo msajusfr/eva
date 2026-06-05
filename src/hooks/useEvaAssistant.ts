@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createChunks } from "../services/chunkService";
-import { generateAnswer } from "../services/llmService";
+import { generateAnswer, generateLocalAnswer } from "../services/llmService";
 import { extractPdfText } from "../services/pdfService";
 import { searchChunks } from "../services/searchService";
 import type { ChatMessage, ConversationState, PdfChunk, PdfIndexState } from "../types";
@@ -163,7 +163,14 @@ export function useEvaAssistant() {
           ...current,
           messages: [
             ...current.messages,
-            createMessage("assistant", `Erreur: ${message}`, sources)
+            createMessage(
+              "assistant",
+              `L'appel au modele a echoue: ${message}\n\n${generateLocalAnswer(
+                trimmed,
+                sources
+              )}`,
+              sources
+            )
           ]
         }));
       } finally {

@@ -20,8 +20,9 @@ function chunkPage(page: PdfPageText): PdfChunk[] {
   let index = 1;
 
   while (cursor < normalized.length) {
+    const start = findChunkStart(normalized, cursor);
     const end = findChunkEnd(normalized, cursor + TARGET_SIZE);
-    const text = normalized.slice(cursor, end).trim();
+    const text = normalized.slice(start, end).trim();
 
     if (text.length > 80) {
       chunks.push({
@@ -41,6 +42,15 @@ function chunkPage(page: PdfPageText): PdfChunk[] {
   }
 
   return chunks;
+}
+
+function findChunkStart(text: string, cursor: number): number {
+  if (cursor === 0) {
+    return 0;
+  }
+
+  const nextSpace = text.indexOf(" ", cursor);
+  return nextSpace > -1 ? nextSpace + 1 : cursor;
 }
 
 function findChunkEnd(text: string, desiredEnd: number): number {

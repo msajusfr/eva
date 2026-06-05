@@ -34,6 +34,10 @@ export async function generateAnswer({
   return generateWithOpenAI({ apiKey, model: settings.model, question, context });
 }
 
+export function generateLocalAnswer(question: string, sources: SearchResult[]): string {
+  return buildLocalAnswer(question, sources);
+}
+
 async function generateWithOpenAI({
   apiKey,
   model,
@@ -133,8 +137,44 @@ function buildLocalAnswer(question: string, sources: SearchResult[]): string {
   }
 
   const best = sources[0];
-  const excerpt =
-    best.text.length > 420 ? `${best.text.slice(0, 420).trim()}...` : best.text;
+  const excerpt = findRelevantExcerpt(best.text, question);
 
-  return `Sans cle API, je peux seulement afficher l'extrait le plus pertinent trouve dans le document pour "${question}".\n\nPage ${best.page}: ${excerpt}`;
+  return `Voici l'extrait le plus pertinent trouve dans le document pour "${question}".\n\nPage ${best.page}: ${excerpt}`;
+}
+
+function findRelevantExcerpt(text: string, question: string): string {
+  const terms = getQuestionTerms(question);
+  const lowerText = text.toLocaleLowerCase("fr");
+  const firstMatch = terms
+    .map((term) => lowerText.indexOf(term))
+    .filter((index) => index >= 0)
+    .sort((a, b) => a - b)[0];
+
+  if (firstMatch === undefined) {
+    return text.length > 460 ? `${text.slice(0, 460).trim()}...` : text;
+  }
+
+  const start = Math.max(0, firstMatch - 160);
+  const end = Math.min(text.length, firstMatch + 360);
+  const prefix = start > 0 ? "..." : "";
+  const suffix = end < text.length ? "..." : "";
+
+  return `${prefix}${text.slice(start, end).trim()}${suffix}`;
+}
+
+function getQuestionTerms(question: string): string[] {
+  const normalized = question
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+
+  if (/(tarif|prix|cout|inscription)/.test(normalized)) {
+    return ["participation", "gratuite", "contribution", "engagement"];
+  }
+
+  if (/(presente|presentation|eva)/.test(normalized)) {
+    return ["club eva", "think tank", "structure ouverte", "partenariat"];
+  }
+
+  return normalized.split(/[^a-z0-9]+/).filter((term) => term.length > 3);
 }
