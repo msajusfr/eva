@@ -30,6 +30,7 @@ interface SpeechRecognitionInstance extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
+  abort: () => void;
   onend: (() => void) | null;
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
   onresult: ((event: SpeechRecognitionEvent) => void) | null;
@@ -53,6 +54,8 @@ interface UseSpeechDictationOptions {
 export function useSpeechDictation({ onText }: UseSpeechDictationOptions) {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const committedRef = useRef(false);
+  const transcriptRef = useRef("");
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const SpeechRecognition = useMemo(() => {
@@ -64,13 +67,23 @@ export function useSpeechDictation({ onText }: UseSpeechDictationOptions) {
 
   useEffect(() => {
     return () => {
-      recognitionRef.current?.stop();
+      recognitionRef.current?.abort();
     };
   }, []);
 
+  function commitTranscript() {
+    const transcript = transcriptRef.current.trim();
+
+    if (!transcript || committedRef.current) {
+      return;
+    }
+
+    committedRef.current = true;
+    onText(transcript);
+  }
+
   function stop() {
     recognitionRef.current?.stop();
-    setIsListening(false);
   }
 
   function start() {
@@ -80,6 +93,9 @@ export function useSpeechDictation({ onText }: UseSpeechDictationOptions) {
     }
 
     setError(null);
+    transcriptRef.current = "";
+    committedRef.current = false;
+    recognitionRef.current?.abort();
 
     const recognition = new SpeechRecognition();
     recognition.lang = "fr-FR";
@@ -87,38 +103,49 @@ export function useSpeechDictation({ onText }: UseSpeechDictationOptions) {
     recognition.interimResults = true;
 
     recognition.onresult = (event) => {
-      let finalText = "";
+      let transcript = "";
+      let hasFinalResult = false;
 
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      for (let index = 0; index < event.results.length; index += 1) {
         const result = event.results[index];
-        const transcript = result[0]?.transcript ?? "";
+        transcript += result[0]?.transcript ?? "";
 
         if (result.isFinal) {
-          finalText += transcript;
+          hasFinalResult = true;
         }
       }
 
-      if (finalText.trim()) {
-        onText(finalText.trim());
+      transcriptRef.current = transcript.trim();
+
+      if (hasFinalResult) {
+        commitTranscript();
       }
     };
 
     recognition.onerror = (event) => {
-      setError(
-        event.error === "not-allowed"
-          ? "Autorise le micro pour dicter une question."
-          : "La dictee vocale s'est arretee."
-      );
+      if (event.error === "not-allowed") {
+        setError("Autorise le micro pour dicter une question.");
+      } else if (event.error !== "no-speech" && !transcriptRef.current) {
+        setError("La dictee vocale s'est arretee.");
+      }
       setIsListening(false);
     };
 
     recognition.onend = () => {
+      commitTranscript();
       setIsListening(false);
+      recognitionRef.current = null;
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      setError("La dictee vocale est deja en cours.");
+      setIsListening(false);
+    }
   }
 
   function toggle() {
