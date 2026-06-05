@@ -1,7 +1,7 @@
 import type { PdfChunk, PdfPageText } from "../types";
 
-const TARGET_SIZE = 760;
-const OVERLAP = 140;
+const TARGET_SIZE = 940;
+const OVERLAP = 260;
 
 export function createChunks(pages: PdfPageText[]): PdfChunk[] {
   return pages.flatMap((page) => chunkPage(page));

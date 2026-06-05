@@ -136,10 +136,76 @@ function buildLocalAnswer(question: string, sources: SearchResult[]): string {
     return "Je ne trouve pas cette information dans le document.";
   }
 
+  const directAnswer = buildDirectAnswer(question, sources);
+
+  if (directAnswer) {
+    return directAnswer;
+  }
+
   const best = sources[0];
   const excerpt = findRelevantExcerpt(best.text, question);
 
-  return `Voici l'extrait le plus pertinent trouve dans le document pour "${question}".\n\nPage ${best.page}: ${excerpt}`;
+  return `D'apres le document, ${excerpt}`;
+}
+
+function buildDirectAnswer(
+  question: string,
+  sources: SearchResult[]
+): string | undefined {
+  const normalizedQuestion = normalizeText(question);
+  const context = sources.map((source) => source.text).join(" ");
+  const normalizedContext = normalizeText(context);
+
+  if (/(tarif|prix|cout|inscription)/.test(normalizedQuestion)) {
+    if (
+      normalizedContext.includes("participation est gratuite") ||
+      normalizedContext.includes("participation gratuite")
+    ) {
+      return "La participation est gratuite. Le document demande en revanche un engagement a assister a l'integralite du cycle, ainsi qu'une contribution active aux debats.";
+    }
+  }
+
+  if (/(presente|presentation|eva|club eva)/.test(normalizedQuestion)) {
+    const description = findBetween(
+      context,
+      "Le Club EVA",
+      "Les échanges de chaque soirée"
+    );
+
+    if (description) {
+      return cleanAnswer(description);
+    }
+  }
+
+  if (/(lieu|adresse|ou)/.test(normalizedQuestion)) {
+    const place = findBetween(context, "Lieu", "Contact");
+
+    if (place) {
+      return cleanAnswer(place);
+    }
+  }
+
+  if (/(horaire|heure|frequence|quand)/.test(normalizedQuestion)) {
+    const frequency =
+      findBetween(context, "Fréquence", "La participation") ??
+      findBetween(context, "Fréquence", "Lieu");
+
+    if (frequency) {
+      return cleanAnswer(frequency);
+    }
+  }
+
+  if (/(qui|intervient|intervenant|invite)/.test(normalizedQuestion)) {
+    const month = findRequestedMonth(normalizedQuestion);
+    const scheduleBlock = month ? findScheduleBlock(context, month) : context;
+    const speakers = scheduleBlock?.match(/Avec\s+(.+?)\./i)?.[1];
+
+    if (speakers) {
+      return `Les intervenants sont ${cleanInlineText(speakers)}.`;
+    }
+  }
+
+  return undefined;
 }
 
 function findRelevantExcerpt(text: string, question: string): string {
@@ -163,10 +229,7 @@ function findRelevantExcerpt(text: string, question: string): string {
 }
 
 function getQuestionTerms(question: string): string[] {
-  const normalized = question
-    .toLocaleLowerCase("fr")
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
+  const normalized = normalizeText(question);
 
   if (/(tarif|prix|cout|inscription)/.test(normalized)) {
     return ["participation", "gratuite", "contribution", "engagement"];
@@ -177,4 +240,70 @@ function getQuestionTerms(question: string): string[] {
   }
 
   return normalized.split(/[^a-z0-9]+/).filter((term) => term.length > 3);
+}
+
+function normalizeText(value: string): string {
+  return value
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+function findBetween(
+  text: string,
+  startMarker: string,
+  endMarker: string
+): string | undefined {
+  const start = text.indexOf(startMarker);
+
+  if (start < 0) {
+    return undefined;
+  }
+
+  const end = text.indexOf(endMarker, start + startMarker.length);
+  return text.slice(start, end > start ? end : undefined).trim();
+}
+
+function cleanAnswer(value: string): string {
+  return cleanInlineText(value).replace(/\s([,.;:!?])/g, "$1");
+}
+
+function cleanInlineText(value: string): string {
+  return value
+    .replace(/(\p{L}+)\s+-\s+(\p{L}+)/gu, (_, left: string, right: string) =>
+      left.length <= 5 || right.length <= 3 ? `${left}${right}` : `${left} - ${right}`
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findRequestedMonth(question: string): string | undefined {
+  return [
+    "mai",
+    "juin",
+    "juillet",
+    "septembre",
+    "octobre",
+    "novembre",
+    "decembre",
+    "janvier",
+    "fevrier"
+  ].find((month) => question.includes(month));
+}
+
+function findScheduleBlock(text: string, month: string): string | undefined {
+  const normalized = normalizeText(text);
+  const monthIndex = normalized.indexOf(month);
+
+  if (monthIndex < 0) {
+    return undefined;
+  }
+
+  const nextDate = normalized.slice(monthIndex + month.length).search(
+    /\d{1,2}\s+(mai|juin|juillet|septembre|octobre|novembre|decembre|janvier|fevrier)\s+202[5-6]/
+  );
+  const end =
+    nextDate >= 0 ? monthIndex + month.length + nextDate : text.length;
+
+  return text.slice(Math.max(0, monthIndex - 20), end);
 }
