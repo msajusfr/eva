@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Mic, MicOff } from "lucide-react";
+import { useSpeechDictation } from "../../hooks/useSpeechDictation";
 import { Button } from "../UI/Button";
 
 interface ChatComposerProps {
@@ -14,6 +15,11 @@ export function ChatComposer({
   onSend
 }: ChatComposerProps) {
   const [value, setValue] = useState("");
+  const dictation = useSpeechDictation({
+    onText: (text) => {
+      setValue((current) => [current.trim(), text].filter(Boolean).join(" "));
+    }
+  });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,6 +53,25 @@ export function ChatComposer({
           }}
         />
         <Button
+          className={`h-12 w-12 shrink-0 px-0 ${
+            dictation.isListening
+              ? "bg-amber-300 text-slate-950 hover:bg-amber-200"
+              : ""
+          }`}
+          disabled={disabled || isGenerating || !dictation.isSupported}
+          aria-label={dictation.isListening ? "Arreter la dictee" : "Dicter une question"}
+          title={
+            dictation.isSupported
+              ? "Dicter une question"
+              : "Dictee non disponible sur ce navigateur"
+          }
+          type="button"
+          variant={dictation.isListening ? "primary" : "ghost"}
+          onClick={dictation.toggle}
+        >
+          {dictation.isListening ? <MicOff size={19} /> : <Mic size={19} />}
+        </Button>
+        <Button
           className="h-12 w-12 shrink-0 px-0"
           disabled={disabled || isGenerating || !value.trim()}
           aria-label="Envoyer"
@@ -59,6 +84,11 @@ export function ChatComposer({
           )}
         </Button>
       </div>
+      {dictation.error && (
+        <p className="px-3 pb-1 pt-2 text-xs text-amber-200">
+          {dictation.error}
+        </p>
+      )}
     </form>
   );
 }
