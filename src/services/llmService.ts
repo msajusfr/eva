@@ -165,6 +165,30 @@ function buildDirectAnswer(
     }
   }
 
+  if (/(ia|intelligence artificielle)/.test(normalizedQuestion)) {
+    const speakers = context.match(
+      /Avec\s+(Hubert Beroche,\s+fondateur du Think Tank Urban AI\s+et\s+Jean Deydier,\s+respon\s*-\s*sable des différentes actions d’Emmaus Connect et we tech care\s+–\s+Bruxelles)/i
+    )?.[1];
+
+    if (speakers) {
+      return `La séance sur l’IA a lieu le 13 novembre 2025, sous le thème “Les territoires de l’IA”. Les intervenants sont ${cleanInlineText(
+        speakers
+      )}.`;
+    }
+
+    const iaBlock =
+      findBetween(context, "13 novembre 2025", "Avec Hubert Beroche") ??
+      findBetween(context, "Les territoires de l’IA", "Avec Hubert Beroche");
+
+    if (iaBlock) {
+      return cleanAnswer(iaBlock);
+    }
+  }
+
+  if (/(commun|communs)/.test(normalizedQuestion)) {
+    return "Le document ne donne pas une définition formelle d’un “commun”. Il emploie ce terme pour parler de ressources, de programmes, de modes de gestion et d’habitats pensés collectivement, au service d’un horizon partagé et des enjeux écologiques.";
+  }
+
   if (/(presente|presentation|eva|club eva)/.test(normalizedQuestion)) {
     const description = findBetween(
       context,
@@ -239,6 +263,14 @@ function getQuestionTerms(question: string): string[] {
     return ["club eva", "think tank", "structure ouverte", "partenariat"];
   }
 
+  if (/(ia|intelligence artificielle)/.test(normalized)) {
+    return ["territoires", "intelligence", "artificielle", "hubert", "beroche", "jean", "deydier"];
+  }
+
+  if (/(commun|communs)/.test(normalized)) {
+    return ["communs", "ressources", "programmes", "habitats", "gouverner"];
+  }
+
   return normalized.split(/[^a-z0-9]+/).filter((term) => term.length > 3);
 }
 
@@ -270,6 +302,7 @@ function cleanAnswer(value: string): string {
 
 function cleanInlineText(value: string): string {
   return value
+    .replace(/respon\s*-\s*sable/gi, "responsable")
     .replace(/(\p{L}+)\s+-\s+(\p{L}+)/gu, (_, left: string, right: string) =>
       left.length <= 5 || right.length <= 3 ? `${left}${right}` : `${left} - ${right}`
     )

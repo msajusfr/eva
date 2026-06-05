@@ -50,7 +50,11 @@ const QUERY_EXPANSIONS: Record<string, string[]> = {
   horaire: ["19h", "21h", "mardi", "jeudi", "frequence"],
   horaires: ["19h", "21h", "mardi", "jeudi", "frequence"],
   date: ["mai", "juin", "juillet", "septembre", "octobre", "novembre", "decembre", "janvier", "fevrier"],
-  dates: ["mai", "juin", "juillet", "septembre", "octobre", "novembre", "decembre", "janvier", "fevrier"]
+  dates: ["mai", "juin", "juillet", "septembre", "octobre", "novembre", "decembre", "janvier", "fevrier"],
+  ia: ["intelligence", "artificielle", "territoires", "urban", "hubert", "beroche", "deydier"],
+  intelligence: ["artificielle", "ia", "territoires", "urban", "hubert", "beroche", "deydier"],
+  commun: ["communs", "bien", "partage", "ressources", "habitats", "gouverner"],
+  communs: ["commun", "bien", "partage", "ressources", "habitats", "gouverner"]
 };
 
 export function searchChunks(
@@ -112,7 +116,7 @@ function tokenize(value: string): string[] {
     .replace(/\p{Diacritic}/gu, "")
     .split(/[^a-z0-9]+/i)
     .map(normalizePlural)
-    .filter((token) => token.length > 2 && !STOP_WORDS.has(token));
+    .filter((token) => (token.length > 2 || token === "ia") && !STOP_WORDS.has(token));
 }
 
 function expandTokens(tokens: string[]): string[] {
