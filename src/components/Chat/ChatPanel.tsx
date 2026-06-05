@@ -4,6 +4,7 @@ import type { ChatMessage } from "../../types";
 import { Button } from "../UI/Button";
 import { ChatComposer } from "./ChatComposer";
 import { MessageBubble } from "./MessageBubble";
+import { SuggestedQuestions } from "./SuggestedQuestions";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -79,6 +80,10 @@ export function ChatPanel({
           </div>
         )}
       </div>
+      <SuggestedQuestions
+        disabled={!canAsk || isGenerating}
+        onSelect={onSend}
+      />
       <ChatComposer disabled={!canAsk} isGenerating={isGenerating} onSend={onSend} />
     </section>
   );
