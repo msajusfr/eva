@@ -22,8 +22,8 @@ export function AssistantPage() {
           <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-4 text-sm leading-6 text-slate-400 backdrop-blur-xl">
             <p className="font-semibold text-slate-200">Mode local</p>
             <p className="mt-1">
-              Sans cle API, EVA affiche les meilleurs extraits trouves. Avec une
-              cle, il genere une reponse synthetique a partir de ces sources.
+              Sans cle API, EVA repond deja a partir du document. Avec une cle,
+              il peut enrichir la synthese a partir des sources retrouvees.
             </p>
           </section>
         </aside>

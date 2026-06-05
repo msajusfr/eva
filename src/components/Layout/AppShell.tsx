@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { FileText, Sparkles } from "lucide-react";
+import { FileText } from "lucide-react";
+import { EvaLogo } from "../UI/EvaLogo";
 
 interface AppShellProps {
   children: ReactNode;
@@ -12,8 +13,8 @@ export function AppShell({ children }: AppShellProps) {
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between gap-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-950/40">
-              <Sparkles size={22} strokeWidth={2.4} />
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl shadow-lg shadow-blue-950/45 ring-1 ring-white/15">
+              <EvaLogo className="h-12 w-12 rounded-2xl" />
             </div>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
