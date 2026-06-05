@@ -9,12 +9,12 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "pwa-192.png", "pwa-512.png"],
       manifest: {
-        name: "Club EVA Assistant",
-        short_name: "EVA",
+        name: "Club EVA",
+        short_name: "Eva",
         start_url: "/",
         display: "standalone",
-        theme_color: "#0f172a",
-        background_color: "#020617",
+        theme_color: "#1b140f",
+        background_color: "#1b140f",
         icons: [
           {
             src: "/pwa-192.png",
